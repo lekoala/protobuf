@@ -26,8 +26,8 @@
 #include <cstdint>
 #include <iterator>
 #include <limits>
+#include <new>
 #include <string>
-#include <tuple>
 #include <type_traits>
 #include <utility>
 
@@ -92,7 +92,7 @@ struct IsMovable
 // Do not use this struct - it exists for internal use only.
 template <typename T>
 struct ArenaOffsetHelper {
-  constexpr static size_t value = offsetof(T, arena_);
+  static constexpr size_t value = offsetof(T, arena_);
 };
 
 // This is the common base class for RepeatedPtrFields.  It deals only in void*
@@ -103,12 +103,13 @@ struct ArenaOffsetHelper {
 //   class TypeHandler {
 //    public:
 //     typedef MyType Type;
-//     static Type* New();
-//     static Type* NewFromPrototype(const Type* prototype,
-//                                       Arena* arena);
+//     static Type* New(Arena* arena);
+//     static Type* New(Arena* arena, Type&& value);
+//     static Type* NewFromPrototype(const Type* prototype, Arena* arena);
 //     static void Delete(Type*);
 //     static void Clear(Type*);
 //     static void Merge(const Type& from, Type* to);
+//     static void GetArena(Type* value);
 //
 //     // Only needs to be implemented if SpaceUsedExcludingSelf() is called.
 //     static int SpaceUsedLong(const Type&);
@@ -145,7 +146,7 @@ class PROTOBUF_EXPORT RepeatedPtrFieldBase {
 
   ~RepeatedPtrFieldBase() {
 #ifndef NDEBUG
-    // Try to trigger segfault / asan failure in non-opt builds. If arena_
+    // Try to trigger segfault / asan failure in non-opt builds if arena_
     // lifetime has ended before the destructor.
     if (arena_) (void)arena_->SpaceAllocated();
 #endif
