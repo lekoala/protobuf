@@ -13,13 +13,13 @@
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "google/protobuf/descriptor.h"
 #include "google/protobuf/compiler/hpb/gen_repeated_fields.h"
 #include "google/protobuf/compiler/hpb/gen_utils.h"
 #include "google/protobuf/compiler/hpb/names.h"
 #include "google/protobuf/compiler/hpb/output.h"
-#include "upb_generator/common.h"
+#include "google/protobuf/descriptor.h"
 #include "upb_generator/keywords.h"
+#include "upb_generator/minitable/names.h"
 #include "upb_generator/names.h"
 
 namespace google::protobuf::hpb_generator {
@@ -304,7 +304,8 @@ void WriteMapAccessorDefinitions(const protobuf::Descriptor* message,
         MessagePtrConstType(val, /* is_const */ true), MessageName(message),
         MessageName(val->message_type()), optional_conversion_code,
         converted_key_name, upbc_name,
-        ::upb::generator::MessageInit(val->message_type()->full_name()));
+        ::upb::generator::MiniTableMessageVarName(
+            val->message_type()->full_name()));
     output(
         R"cc(
           bool $0::set_$1($2 key, $3 value) {
@@ -318,7 +319,8 @@ void WriteMapAccessorDefinitions(const protobuf::Descriptor* message,
         MessagePtrConstType(val, /* is_const */ false), MessageName(message),
         MessageName(val->message_type()), optional_conversion_code,
         converted_key_name, upbc_name,
-        ::upb::generator::MessageInit(val->message_type()->full_name()));
+        ::upb::generator::MiniTableMessageVarName(
+            val->message_type()->full_name()));
     output(
         R"cc(
           absl::StatusOr<$3> $0::get_$1($2 key) {

@@ -98,7 +98,6 @@ bootstrap_cc_library(
     copts = UPB_DEFAULT_CPPOPTS,
     visibility = ["//upb:friend_generators"],
     deps = [
-        ":mangle",
         "//src/google/protobuf:port",
         "//upb:mini_table",
         "//upb:port",
@@ -156,7 +155,12 @@ bootstrap_cc_library(
     copts = UPB_DEFAULT_CPPOPTS,
     visibility = ["//upb:friend_generators"],
     deps = [
+        "//src/google/protobuf/io",
+        "//src/google/protobuf/io:printer",
+        "//upb:base",
+        "//upb:mem",
         "//upb:port",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/log:absl_log",
@@ -185,20 +189,7 @@ bootstrap_cc_library(
     ],
 )
 
-cc_library(
-    name = "mangle",
-    srcs = ["mangle.cc"],
-    hdrs = ["mangle.h"],
-    copts = UPB_DEFAULT_CPPOPTS,
-    visibility = [
-        "//rust:__subpackages__",
-        "//upb:friends",
-    ],
-    deps = [
-        "//src/google/protobuf:port",
-        "@com_google_absl//absl/strings",
-    ],
-)
+cc_library(name = "mangle")
 
 cc_binary(
     name = "libupb_generator.so",

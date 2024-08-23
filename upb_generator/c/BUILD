@@ -14,6 +14,28 @@ load(
 
 licenses(["notice"])
 
+cc_library(
+    name = "names",
+    srcs = ["names.cc"],
+    hdrs = ["names.h"],
+    visibility = ["//src/google/protobuf/compiler/hpb:__pkg__"],
+    deps = [
+        ":names_internal",
+        "//upb_generator/common:names",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "names_internal",
+    srcs = ["names_internal.cc"],
+    hdrs = ["names_internal.h"],
+    deps = [
+        "//upb_generator/common:names",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
 bootstrap_cc_binary(
     name = "protoc-gen-upb",
     bootstrap_deps = [":generator_with_main"],
@@ -42,12 +64,17 @@ bootstrap_cc_library(
     copts = UPB_DEFAULT_CPPOPTS,
     visibility = ["//pkg:__pkg__"],
     deps = [
+        ":names",
+        ":names_internal",
         "//src/google/protobuf/compiler:code_generator",
         "//upb:base",
         "//upb:mem",
         "//upb:mini_table",
         "//upb:port",
         "//upb:wire_reader",
+        "//upb_generator/common:names",
+        "//upb_generator/minitable:names",
+        "//upb_generator/minitable:names_internal",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
