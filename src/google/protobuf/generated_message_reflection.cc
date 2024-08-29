@@ -790,18 +790,18 @@ void SwapFieldHelper::SwapMessage(const Reflection* r, Message* lhs,
 
   if (*lhs_sub != nullptr && *rhs_sub != nullptr) {
     (*lhs_sub)->GetReflection()->Swap(*lhs_sub, *rhs_sub);
-  } else if (*lhs_sub == nullptr && r->HasBit(*rhs, field)) {
+  } else if (*lhs_sub == nullptr && r->HasPresence(*rhs, field)) {
     *lhs_sub = (*rhs_sub)->New(lhs_arena);
     (*lhs_sub)->CopyFrom(**rhs_sub);
     r->ClearField(rhs, field);
     // Ensures has bit is unchanged after ClearField.
-    r->SetBit(rhs, field);
-  } else if (*rhs_sub == nullptr && r->HasBit(*lhs, field)) {
+    r->SetPresence(rhs, field);
+  } else if (*rhs_sub == nullptr && r->HasPresence(*lhs, field)) {
     *rhs_sub = (*lhs_sub)->New(rhs_arena);
     (*rhs_sub)->CopyFrom(**lhs_sub);
     r->ClearField(lhs, field);
     // Ensures has bit is unchanged after ClearField.
-    r->SetBit(lhs, field);
+    r->SetPresence(lhs, field);
   }
 }
 
@@ -1169,7 +1169,7 @@ void Reflection::SwapFieldsImpl(
         // oneof already. This has to be done after SwapField, because SwapField
         // may depend on the information in has bits.
         if (!field->is_repeated()) {
-          SwapBit(message1, message2, field);
+          SwapPresence(message1, message2, field);
           if (field->options().ctype() == FieldOptions::STRING &&
               IsInlined(field)) {
             ABSL_DCHECK(!unsafe_shallow_swap ||
@@ -1225,7 +1225,7 @@ bool Reflection::HasField(const Message& message,
     if (schema_.InRealOneof(field)) {
       return HasOneofField(message, field);
     } else {
-      return HasBit(message, field);
+      return HasPresence(message, field);
     }
   }
 }
@@ -1371,8 +1371,8 @@ void Reflection::ClearField(Message* message,
       ClearOneofField(message, field);
       return;
     }
-    if (HasBit(*message, field)) {
-      ClearBit(message, field);
+    if (HasPresence(*message, field)) {
+      ClearPresence(message, field);
 
       // We need to set the field back to its default value.
       switch (field->cpp_type()) {
@@ -1683,11 +1683,12 @@ void Reflection::ListFields(const Message& message,
           append_to_output(field);
         }
       } else if (has_bits && has_bits_indices[i] != static_cast<uint32_t>(-1)) {
-        // Equivalent to: HasBit(message, field)
+        // Equivalent to: HasPresence(message, field)
         if (IsIndexInHasBitSet(has_bits, has_bits_indices[i])) {
           append_to_output(field);
         }
-      } else if (HasBit(message, field)) {  // Fall back on proto3-style HasBit.
+      } else if (HasPresence(message,
+                             field)) {  // Fall back on proto3-style HasBit.
         append_to_output(field);
       }
     }
@@ -2337,7 +2338,7 @@ Message* Reflection::MutableMessage(Message* message,
         *result_holder = default_message->New(message->GetArena());
       }
     } else {
-      SetBit(message, field);
+      SetPresence(message, field);
     }
 
     if (*result_holder == nullptr) {
@@ -2371,9 +2372,9 @@ void Reflection::UnsafeArenaSetAllocatedMessage(
     }
 
     if (sub_message == nullptr) {
-      ClearBit(message, field);
+      ClearPresence(message, field);
     } else {
-      SetBit(message, field);
+      SetPresence(message, field);
     }
     Message** sub_message_holder = MutableRaw<Message*>(message, field);
     if (message->GetArena() == nullptr) {
@@ -2432,7 +2433,7 @@ Message* Reflection::UnsafeArenaReleaseMessage(Message* message,
                                                                 factory));
   } else {
     if (!(field->is_repeated() || schema_.InRealOneof(field))) {
-      ClearBit(message, field);
+      ClearPresence(message, field);
     }
     if (schema_.InRealOneof(field)) {
       if (HasOneofField(*message, field)) {
@@ -2904,8 +2905,8 @@ void Reflection::SwapInlinedStringDonated(Message* lhs, Message* rhs,
 }
 
 // Simple accessors for manipulating has_bits_.
-bool Reflection::HasBit(const Message& message,
-                        const FieldDescriptor* field) const {
+bool Reflection::HasPresence(const Message& message,
+                             const FieldDescriptor* field) const {
   ABSL_DCHECK(!field->options().weak());
   if (schema_.HasBitIndex(field) != static_cast<uint32_t>(-1)) {
     return IsIndexInHasBitSet(GetHasBits(message), schema_.HasBitIndex(field));
@@ -2968,12 +2969,13 @@ bool Reflection::HasBit(const Message& message,
         // handled above; avoid warning
         break;
     }
-    ABSL_LOG(FATAL) << "Reached impossible case in HasBit().";
+    ABSL_LOG(FATAL) << "Reached impossible case in HasPresence().";
     return false;
   }
 }
 
-void Reflection::SetBit(Message* message, const FieldDescriptor* field) const {
+void Reflection::SetPresence(Message* message,
+                             const FieldDescriptor* field) const {
   ABSL_DCHECK(!field->options().weak());
   const uint32_t index = schema_.HasBitIndex(field);
   if (index == static_cast<uint32_t>(-1)) return;
@@ -2981,8 +2983,8 @@ void Reflection::SetBit(Message* message, const FieldDescriptor* field) const {
       (static_cast<uint32_t>(1) << (index % 32));
 }
 
-void Reflection::ClearBit(Message* message,
-                          const FieldDescriptor* field) const {
+void Reflection::ClearPresence(Message* message,
+                               const FieldDescriptor* field) const {
   ABSL_DCHECK(!field->options().weak());
   const uint32_t index = schema_.HasBitIndex(field);
   if (index == static_cast<uint32_t>(-1)) return;
@@ -2990,22 +2992,22 @@ void Reflection::ClearBit(Message* message,
       ~(static_cast<uint32_t>(1) << (index % 32));
 }
 
-void Reflection::SwapBit(Message* message1, Message* message2,
-                         const FieldDescriptor* field) const {
+void Reflection::SwapPresence(Message* message1, Message* message2,
+                              const FieldDescriptor* field) const {
   ABSL_DCHECK(!field->options().weak());
   if (!schema_.HasHasbits()) {
     return;
   }
-  bool temp_has_bit = HasBit(*message1, field);
-  if (HasBit(*message2, field)) {
-    SetBit(message1, field);
+  bool temp_has_presence = HasPresence(*message1, field);
+  if (HasPresence(*message2, field)) {
+    SetPresence(message1, field);
   } else {
-    ClearBit(message1, field);
+    ClearPresence(message1, field);
   }
-  if (temp_has_bit) {
-    SetBit(message2, field);
+  if (temp_has_presence) {
+    SetPresence(message2, field);
   } else {
-    ClearBit(message2, field);
+    ClearPresence(message2, field);
   }
 }
 
@@ -3133,14 +3135,14 @@ void Reflection::SetField(Message* message, const FieldDescriptor* field,
     ClearOneof(message, field->containing_oneof());
   }
   *MutableRaw<Type>(message, field) = value;
-  real_oneof ? SetOneofCase(message, field) : SetBit(message, field);
+  real_oneof ? SetOneofCase(message, field) : SetPresence(message, field);
 }
 
 template <typename Type>
 Type* Reflection::MutableField(Message* message,
                                const FieldDescriptor* field) const {
   schema_.InRealOneof(field) ? SetOneofCase(message, field)
-                             : SetBit(message, field);
+                             : SetPresence(message, field);
   return MutableRaw<Type>(message, field);
 }
 
