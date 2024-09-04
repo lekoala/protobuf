@@ -19,8 +19,6 @@
 
 load("@rules_rust//rust:defs.bzl", "rust_test")
 
-package(default_applicable_licenses = ["//:license"])
-
 licenses(["notice"])
 
 # TODO: Enable this for the cpp kernel and move these tests to shared.
