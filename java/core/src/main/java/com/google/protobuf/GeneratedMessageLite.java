@@ -1549,8 +1549,7 @@ public abstract class GeneratedMessageLite<
 
   protected static <E> ProtobufList<E> mutableCopy(ProtobufList<E> list) {
     int size = list.size();
-    return list.mutableCopyWithCapacity(
-        size == 0 ? AbstractProtobufList.DEFAULT_CAPACITY : size * 2);
+    return list.mutableCopyWithCapacity(size * 2);
   }
 
   /**
